@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}My Profile – TalentPortal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="fw-bold"><i class="bi bi-person-badge me-2 text-primary"></i>My Profile</h2>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('profile.edit_profile') }}" class="btn btn-primary">
+      <i class="bi bi-pencil me-1"></i>Edit
+    </a>
+    {% if profile %}
+    <a href="{{ url_for('profile.download_pdf', user_id=current_user.id) }}" class="btn btn-outline-secondary">
+      <i class="bi bi-file-earmark-pdf me-1"></i>Download PDF
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+{% if profile %}
+<div class="row g-4">
+  <!-- Left Column -->
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm text-center p-4">
+      {% if profile.photo_filename %}
+        <img src="{{ url_for('static', filename='uploads/' + profile.photo_filename) }}"
+             alt="{{ profile.full_name }}"
+             class="rounded-circle mx-auto shadow mb-3"
+             style="width:130px;height:130px;object-fit:cover;">
+      {% else %}
+        <div class="default-avatar rounded-circle d-inline-flex align-items-center justify-content-center mx-auto mb-3 shadow"
+             style="width:130px;height:130px;">
+          <i class="bi bi-person-fill fs-1 text-white"></i>
+        </div>
+      {% endif %}
+
+      <h4 class="fw-bold mb-0">{{ profile.full_name }}</h4>
+      {% if profile.title %}
+        <p class="text-primary mb-1">{{ profile.title }}</p>
+      {% endif %}
+      {% if profile.location %}
+        <p class="text-muted small mb-2">
+          <i class="bi bi-geo-alt-fill me-1"></i>{{ profile.location }}
+        </p>
+      {% endif %}
+
+      <span class="badge {% if profile.is_public %}bg-success{% else %}bg-secondary{% endif %} mb-3">
+        <i class="bi bi-{% if profile.is_public %}globe{% else %}lock-fill{% endif %} me-1"></i>
+        {{ 'Public' if profile.is_public else 'Private' }}
+      </span>
+
+      <!-- Social Links -->
+      <div class="d-flex justify-content-center gap-2 mt-1">
+        {% if profile.portfolio_url %}
+          <a href="{{ profile.portfolio_url }}" target="_blank" class="btn btn-sm btn-outline-primary" title="Portfolio">
+            <i class="bi bi-globe"></i>
+          </a>
+        {% endif %}
+        {% if profile.github_url %}
+          <a href="{{ profile.github_url }}" target="_blank" class="btn btn-sm btn-outline-dark" title="GitHub">
+            <i class="bi bi-github"></i>
+          </a>
+        {% endif %}
+        {% if profile.linkedin_url %}
+          <a href="{{ profile.linkedin_url }}" target="_blank" class="btn btn-sm btn-outline-primary" title="LinkedIn">
+            <i class="bi bi-linkedin"></i>
+          </a>
+        {% endif %}
+      </div>
+
+      <!-- Delete photo -->
+      {% if profile.photo_filename %}
+      <form method="POST" action="{{ url_for('profile.delete_photo') }}" class="mt-3"
+            onsubmit="return confirm('Remove profile photo?')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-sm btn-outline-danger">
+          <i class="bi bi-trash me-1"></i>Remove Photo
+        </button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right Column -->
+  <div class="col-md-8">
+    <!-- Stats Row -->
+    <div class="row g-3 mb-4">
+      <div class="col-4 text-center">
+        <div class="card border-0 shadow-sm py-3">
+          <h4 class="fw-bold text-primary mb-0">{{ profile.experience_years if profile.experience_years is not none else '–' }}</h4>
+          <small class="text-muted">Yrs Experience</small>
+        </div>
+      </div>
+      <div class="col-4 text-center">
+        <div class="card border-0 shadow-sm py-3">
+          <h4 class="fw-bold text-primary mb-0">{{ profile.skills_list|length }}</h4>
+          <small class="text-muted">Skills</small>
+        </div>
+      </div>
+      <div class="col-4 text-center">
+        <div class="card border-0 shadow-sm py-3">
+          <h4 class="fw-bold text-primary mb-0">
+            {{ [profile.portfolio_url, profile.github_url, profile.linkedin_url] | select | list | length }}
+          </h4>
+          <small class="text-muted">Links</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fix #17: Profile Completeness Indicator -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <h6 class="fw-bold mb-0">
+            <i class="bi bi-bar-chart-fill text-primary me-1"></i>Profile Completeness
+          </h6>
+          <span class="fw-bold {% if profile.completeness == 100 %}text-success{% elif profile.completeness >= 60 %}text-primary{% else %}text-warning{% endif %}">
+            {{ profile.completeness }}%
+          </span>
+        </div>
+        <div class="progress" style="height: 10px;">
+          <div class="progress-bar
+            {% if profile.completeness == 100 %}bg-success
+            {% elif profile.completeness >= 60 %}bg-primary
+            {% else %}bg-warning{% endif %}"
+            role="progressbar"
+            style="width: {{ profile.completeness }}%"
+            aria-valuenow="{{ profile.completeness }}" aria-valuemin="0" aria-valuemax="100">
+          </div>
+        </div>
+        {% if profile.completeness < 100 %}
+        <small class="text-muted mt-1 d-block">
+          Add
+          {% if not profile.photo_filename %}a photo, {% endif %}
+          {% if not profile.bio %}a bio, {% endif %}
+          {% if not profile.skills %}skills, {% endif %}
+          {% if not profile.title %}a title, {% endif %}
+          {% if not profile.location %}location, {% endif %}
+          {% if profile.experience_years is none %}experience years, {% endif %}
+          {% if not (profile.portfolio_url or profile.github_url or profile.linkedin_url) %}a link, {% endif %}
+          to reach 100%.
+        </small>
+        {% else %}
+        <small class="text-success mt-1 d-block fw-semibold">
+          <i class="bi bi-check-circle-fill me-1"></i>Your profile is complete!
+        </small>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Bio -->
+    {% if profile.bio %}
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <h5 class="fw-bold"><i class="bi bi-person-lines-fill text-primary me-2"></i>About</h5>
+        <p class="mb-0" style="white-space:pre-line;">{{ profile.bio }}</p>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Skills -->
+    {% if profile.skills_list %}
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <h5 class="fw-bold"><i class="bi bi-lightning-charge-fill text-primary me-2"></i>Skills</h5>
+        {% for skill in profile.skills_list %}
+          <span class="badge skill-badge me-1 mb-1 fs-6">{{ skill }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% else %}
+<div class="text-center py-5">
+  <i class="bi bi-person-badge display-3 text-muted"></i>
+  <h5 class="mt-3 text-muted">No profile yet</h5>
+  <a href="{{ url_for('profile.edit_profile') }}" class="btn btn-primary mt-2">
+    <i class="bi bi-plus-circle me-1"></i>Create Profile
+  </a>
+</div>
+{% endif %}
+{% endblock %}

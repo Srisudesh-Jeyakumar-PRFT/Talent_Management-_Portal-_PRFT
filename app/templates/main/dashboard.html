@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Dashboard – TalentPortal{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="fw-bold"><i class="bi bi-speedometer2 me-2 text-primary"></i>Dashboard</h2>
+  <span class="text-muted small">Welcome back, <strong>{{ current_user.username }}</strong>
+    {% if current_user.is_admin %}
+      <span class="badge bg-danger ms-1">Admin</span>
+    {% endif %}
+  </span>
+</div>
+
+<div class="row g-4">
+  <!-- Profile Status Card -->
+  <div class="col-md-8">
+    {% if profile %}
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body d-flex gap-4">
+        {% if profile.photo_filename %}
+          <img src="{{ url_for('static', filename='uploads/' + profile.photo_filename) }}"
+               alt="Profile" class="rounded-circle" style="width:90px;height:90px;object-fit:cover;">
+        {% else %}
+          <div class="default-avatar rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0"
+               style="width:90px;height:90px;">
+            <i class="bi bi-person-fill fs-2 text-white"></i>
+          </div>
+        {% endif %}
+        <div class="flex-grow-1">
+          <h4 class="fw-bold mb-0">{{ profile.full_name }}</h4>
+          {% if profile.title %}
+            <p class="text-muted mb-1">{{ profile.title }}</p>
+          {% endif %}
+          {% if profile.skills_list %}
+          <div class="mb-2">
+            {% for skill in profile.skills_list[:6] %}
+              <span class="badge skill-badge me-1">{{ skill }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+          <!-- Fix #17: completeness bar on dashboard -->
+          <div class="mb-2">
+            <div class="d-flex justify-content-between">
+              <small class="text-muted">Profile completeness</small>
+              <small class="fw-semibold {% if profile.completeness == 100 %}text-success{% elif profile.completeness >= 60 %}text-primary{% else %}text-warning{% endif %}">
+                {{ profile.completeness }}%
+              </small>
+            </div>
+            <div class="progress mt-1" style="height:6px;">
+              <div class="progress-bar {% if profile.completeness == 100 %}bg-success{% elif profile.completeness >= 60 %}bg-primary{% else %}bg-warning{% endif %}"
+                   style="width: {{ profile.completeness| default(0) }}%"></div>
+            </div>
+          </div>
+          <div class="d-flex gap-2 mt-2">
+            <a href="{{ url_for('profile.my_profile') }}" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-eye me-1"></i>View
+            </a>
+            <a href="{{ url_for('profile.edit_profile') }}" class="btn btn-sm btn-primary">
+              <i class="bi bi-pencil me-1"></i>Edit Profile
+            </a>
+            <a href="{{ url_for('profile.download_pdf', user_id=current_user.id) }}"
+               class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="card border-2 border-dashed border-primary shadow-sm h-100 text-center py-5">
+      <div class="card-body">
+        <i class="bi bi-person-badge display-4 text-primary"></i>
+        <h5 class="mt-3">Your profile is not set up yet</h5>
+        <p class="text-muted">Create your talent profile to appear in search results.</p>
+        <a href="{{ url_for('profile.edit_profile') }}" class="btn btn-primary">
+          <i class="bi bi-plus-circle me-1"></i>Create Profile
+        </a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Stats -->
+  <div class="col-md-4">
+    <div class="row g-3 h-100">
+      <div class="col-12">
+        <div class="card border-0 shadow-sm text-center py-3">
+          <i class="bi bi-people-fill display-6 text-primary"></i>
+          <h3 class="fw-bold mt-1">{{ total_public }}</h3>
+          <p class="text-muted mb-0 small">Public Profiles</p>
+        </div>
+      </div>
+      {% if current_user.is_admin %}
+      <div class="col-12">
+        <a href="{{ url_for('admin.admin_dashboard') }}" class="card border-0 shadow-sm text-center py-3 text-decoration-none d-block">
+          <i class="bi bi-shield-lock-fill display-6 text-danger"></i>
+          <h6 class="mt-2 text-danger fw-bold">Admin Panel</h6>
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Quick Links -->
+<div class="row g-3 mt-2">
+  <div class="col-12">
+    <h5 class="fw-bold text-muted"><i class="bi bi-lightning-fill me-1"></i>Quick Actions</h5>
+  </div>
+  <div class="col-sm-4">
+    <a href="{{ url_for('profile.edit_profile') }}" class="card border-0 shadow-sm text-decoration-none h-100">
+      <div class="card-body text-center">
+        <i class="bi bi-pencil-square fs-2 text-primary"></i>
+        <p class="mt-2 mb-0 fw-semibold">Edit Profile</p>
+      </div>
+    </a>
+  </div>
+  <div class="col-sm-4">
+    <a href="{{ url_for('main.index') }}" class="card border-0 shadow-sm text-decoration-none h-100">
+      <div class="card-body text-center">
+        <i class="bi bi-search fs-2 text-success"></i>
+        <p class="mt-2 mb-0 fw-semibold">Browse Talents</p>
+      </div>
+    </a>
+  </div>
+  <div class="col-sm-4">
+    <a href="{{ url_for('auth.change_password') }}" class="card border-0 shadow-sm text-decoration-none h-100">
+      <div class="card-body text-center">
+        <i class="bi bi-key fs-2 text-warning"></i>
+        <p class="mt-2 mb-0 fw-semibold">Change Password</p>
+      </div>
+    </a>
+  </div>
+</div>
+{% endblock %}

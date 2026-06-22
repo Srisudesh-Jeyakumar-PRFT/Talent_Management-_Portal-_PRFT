@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Browse Talents – TalentPortal{% endblock %}
+
+{% block content %}
+<!-- Hero / Search -->
+<div class="hero-section text-center mb-4 text-white">
+  <h1 class="display-5 fw-bold"><i class="bi bi-people-fill me-2"></i>Find Top Talent</h1>
+  <p class="lead mb-4">Discover skilled professionals across all domains.</p>
+  <form class="d-flex justify-content-center" method="GET" action="{{ url_for('main.index') }}">
+    <div class="input-group" style="max-width: 520px;">
+      <input type="text" name="q" class="form-control form-control-lg"
+             placeholder="Search by name, skill, or title…"
+             value="{{ search }}">
+      <button class="btn btn-warning fw-bold" type="submit">
+        <i class="bi bi-search"></i> Search
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- Results Header -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="mb-0 text-muted">
+    {% if search %}
+      Results for "<strong>{{ search }}</strong>" ({{ pagination.total }} found)
+    {% else %}
+      {{ pagination.total }} Talent{{ 's' if pagination.total != 1 else '' }} Available
+    {% endif %}
+  </h5>
+  {% if search %}
+  <a href="{{ url_for('main.index') }}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-x-circle me-1"></i>Clear
+  </a>
+  {% endif %}
+</div>
+
+<!-- Profile Cards Grid -->
+{% if profiles %}
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+  {% for profile in profiles %}
+  <div class="col">
+    <div class="card h-100 shadow-sm talent-card border-0">
+      <!-- Card Header with Photo -->
+      <div class="card-img-top-wrapper text-center bg-light py-3">
+        {% if profile.photo_filename %}
+          <img src="{{ url_for('static', filename='uploads/' + profile.photo_filename) }}"
+               alt="{{ profile.full_name }}"
+               class="rounded-circle talent-photo shadow">
+        {% else %}
+          <div class="default-avatar rounded-circle d-inline-flex align-items-center justify-content-center shadow">
+            <i class="bi bi-person-fill fs-1 text-white"></i>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="card-body d-flex flex-column">
+        <h5 class="card-title fw-bold mb-0">{{ profile.full_name }}</h5>
+        {% if profile.title %}
+          <p class="text-muted small mb-2">{{ profile.title }}</p>
+        {% endif %}
+
+        {% if profile.location %}
+          <p class="text-muted small mb-2">
+            <i class="bi bi-geo-alt-fill text-primary me-1"></i>{{ profile.location }}
+          </p>
+        {% endif %}
+
+        {% if profile.experience_years is not none %}
+          <p class="text-muted small mb-2">
+            <i class="bi bi-briefcase-fill text-primary me-1"></i>{{ profile.experience_years }} yr{{ 's' if profile.experience_years != 1 else '' }} experience
+          </p>
+        {% endif %}
+
+        <!-- Bio Excerpt -->
+        {% if profile.bio %}
+          <p class="card-text text-muted small flex-grow-1">
+            {{ profile.bio[:120] }}{% if profile.bio|length > 120 %}…{% endif %}
+          </p>
+        {% endif %}
+
+        <!-- Skills Tags -->
+        {% if profile.skills_list %}
+        <div class="mb-3 mt-2">
+          {% for skill in profile.skills_list[:5] %}
+            <span class="badge skill-badge me-1 mb-1">{{ skill }}</span>
+          {% endfor %}
+          {% if profile.skills_list|length > 5 %}
+            <span class="badge bg-secondary">+{{ profile.skills_list|length - 5 }} more</span>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Actions -->
+        <div class="d-flex gap-2 mt-auto">
+          <a href="{{ url_for('main.view_talent', user_id=profile.user_id) }}"
+             class="btn btn-primary btn-sm flex-grow-1">
+            <i class="bi bi-eye me-1"></i>View Profile
+          </a>
+          <a href="{{ url_for('profile.download_pdf', user_id=profile.user_id) }}"
+             class="btn btn-outline-secondary btn-sm" title="Download PDF">
+            <i class="bi bi-file-earmark-pdf"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if pagination.pages > 1 %}
+<nav class="mt-4 d-flex justify-content-center" aria-label="Talent pages">
+  <ul class="pagination">
+    <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+      <a class="page-link" href="{{ url_for('main.index', page=pagination.prev_num, q=search) }}">
+        <i class="bi bi-chevron-left"></i>
+      </a>
+    </li>
+    {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+      {% if p %}
+        <li class="page-item {% if p == pagination.page %}active{% endif %}">
+          <a class="page-link" href="{{ url_for('main.index', page=p, q=search) }}">{{ p }}</a>
+        </li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">…</span></li>
+      {% endif %}
+    {% endfor %}
+    <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+      <a class="page-link" href="{{ url_for('main.index', page=pagination.next_num, q=search) }}">
+        <i class="bi bi-chevron-right"></i>
+      </a>
+    </li>
+  </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="text-center py-5">
+  <i class="bi bi-search display-3 text-muted"></i>
+  <h4 class="mt-3 text-muted">No talents found</h4>
+  <p class="text-muted">Try a different search term.</p>
+  {% if not current_user.is_authenticated %}
+  <a href="{{ url_for('auth.register') }}" class="btn btn-primary mt-2">Join as a Talent</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

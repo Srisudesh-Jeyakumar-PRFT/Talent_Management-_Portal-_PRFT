@@ -1,0 +1,179 @@
+/* ─── TalentPortal Custom Styles ──────────────────────────────────────────── */
+
+:root {
+  --primary: #1a73e8;
+  --primary-dark: #1558b0;
+  --accent: #34a853;
+  --card-radius: 12px;
+  --shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background-color: #f8f9fb;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main.container {
+  flex: 1;
+}
+
+/* ─── Navbar ─────────────────────────────────────────────────────────────── */
+.navbar {
+  background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%) !important;
+}
+
+.navbar-brand {
+  font-size: 1.3rem;
+  letter-spacing: 0.5px;
+}
+
+/* ─── Hero Section ───────────────────────────────────────────────────────── */
+.hero-section {
+  background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+  border-radius: var(--card-radius);
+  padding: 3rem 2rem;
+}
+
+/* ─── Cards ──────────────────────────────────────────────────────────────── */
+.card {
+  border-radius: var(--card-radius);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.talent-card:hover {
+  box-shadow: 0 8px 24px rgba(26, 115, 232, 0.2) !important;
+  transform: translateY(-3px);
+}
+
+/* ─── Profile Photos ─────────────────────────────────────────────────────── */
+.talent-photo {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+}
+
+/* Default avatar: size set via inline style or context; base provides only bg */
+.default-avatar {
+  background: linear-gradient(135deg, #1a73e8, #0d47a1);
+  flex-shrink: 0;
+}
+
+/* ─── Skill Badges ───────────────────────────────────────────────────────── */
+.skill-badge {
+  background: linear-gradient(135deg, #e8f0fe, #d2e3fc);
+  color: #1a73e8;
+  font-weight: 600;
+  border: 1px solid #c5dbfa;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  padding: 0.3em 0.7em;
+}
+
+/* ─── Buttons ────────────────────────────────────────────────────────────── */
+.btn-primary {
+  background: linear-gradient(135deg, #1a73e8, #1558b0);
+  border: none;
+  border-radius: 8px;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #1558b0, #0d47a1);
+}
+
+/* ─── Forms ──────────────────────────────────────────────────────────────── */
+.form-control, .input-group-text {
+  border-radius: 8px;
+}
+
+.input-group .form-control {
+  border-radius: 0 8px 8px 0;
+}
+
+.input-group .input-group-text:first-child {
+  border-radius: 8px 0 0 8px;
+}
+
+.input-group .btn:last-child {
+  border-radius: 0 8px 8px 0;
+}
+
+.form-control:focus {
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 0.2rem rgba(26, 115, 232, 0.15);
+}
+
+/* ─── Pagination ─────────────────────────────────────────────────────────── */
+.page-link {
+  border-radius: 6px;
+  margin: 0 2px;
+  color: #1a73e8;
+}
+
+.page-item.active .page-link {
+  background: linear-gradient(135deg, #1a73e8, #1558b0);
+  border-color: #1a73e8;
+}
+
+/* ─── Alerts ─────────────────────────────────────────────────────────────── */
+.alert {
+  border-radius: var(--card-radius);
+  border: none;
+}
+
+/* ─── Tables ─────────────────────────────────────────────────────────────── */
+.table th {
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6c757d;
+}
+
+/* ─── Border Dashed ──────────────────────────────────────────────────────── */
+.border-dashed {
+  border-style: dashed !important;
+}
+
+/* ─── Footer ─────────────────────────────────────────────────────────────── */
+footer {
+  background: linear-gradient(135deg, #1a1a2e, #16213e) !important;
+}
+
+/* ─── Responsive Tweaks ──────────────────────────────────────────────────── */
+@media (max-width: 576px) {
+  .hero-section {
+    padding: 2rem 1rem;
+  }
+
+  .hero-section h1 {
+    font-size: 1.8rem;
+  }
+
+  /* Dashboard profile card stacks vertically on small screens */
+  .card-body.d-flex.gap-4 {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  /* Profile edit photo section stacks on mobile */
+  .d-flex.align-items-center.gap-4 {
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+}
+
+/* ─── Utility: card hover for quick-action links ─────────────────────────── */
+a.card:hover {
+  box-shadow: 0 6px 20px rgba(26, 115, 232, 0.15) !important;
+  transform: translateY(-2px);
+  text-decoration: none;
+}
+
+/* ─── Skill badge on profile/detail uses fs-6 — override to keep consistent ─ */
+.skill-badge.fs-6 {
+  font-size: 0.8rem !important;
+}

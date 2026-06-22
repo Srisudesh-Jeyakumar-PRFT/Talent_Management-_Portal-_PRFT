@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard – TalentPortal{% endblock %}
+
+{% block content %}
+<h2 class="fw-bold mb-4"><i class="bi bi-shield-lock-fill text-danger me-2"></i>Admin Dashboard</h2>
+
+<!-- Stats -->
+<div class="row g-4 mb-4">
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm text-center py-4">
+      <i class="bi bi-people-fill display-5 text-primary"></i>
+      <h2 class="fw-bold mt-2">{{ total_users }}</h2>
+      <p class="text-muted mb-2">Total Users</p>
+      <a href="{{ url_for('admin.list_users') }}" class="btn btn-sm btn-outline-primary">Manage</a>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm text-center py-4">
+      <i class="bi bi-person-badge-fill display-5 text-success"></i>
+      <h2 class="fw-bold mt-2">{{ total_profiles }}</h2>
+      <p class="text-muted mb-2">Total Profiles</p>
+      <a href="{{ url_for('admin.list_profiles') }}" class="btn btn-sm btn-outline-success">Manage</a>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm text-center py-4">
+      <i class="bi bi-globe display-5 text-info"></i>
+      <h2 class="fw-bold mt-2 text-info">API</h2>
+      <p class="text-muted mb-2">REST Endpoints</p>
+      <a href="{{ url_for('api.list_talents') }}" target="_blank" class="btn btn-sm btn-outline-info">View JSON</a>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Users — Fix #18: now paginated -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-clock-history me-1 text-primary"></i>Recently Registered Users</span>
+    <small class="text-muted">Page {{ pagination.page }} of {{ pagination.pages }}</small>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Joined</th>
+            <th>Profile</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in recent_users %}
+          <tr>
+            <td class="fw-semibold">{{ user.username }}</td>
+            <td class="text-muted small">{{ user.email }}</td>
+            <td>
+              <span class="badge {% if user.is_admin %}bg-danger{% else %}bg-primary{% endif %}">
+                {{ user.role.value }}
+              </span>
+            </td>
+            <td>
+              <span class="badge {% if user.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                {{ 'Active' if user.is_active else 'Inactive' }}
+              </span>
+            </td>
+            <td class="small text-muted">{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+            <td>
+              {% if user.profile %}
+                <a href="{{ url_for('main.view_talent', user_id=user.id) }}" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-eye"></i>
+                </a>
+              {% else %}
+                <span class="text-muted small">–</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Pagination -->
+{% if pagination.pages > 1 %}
+<nav class="mt-3 d-flex justify-content-center">
+  <ul class="pagination pagination-sm">
+    {% for p in pagination.iter_pages() %}
+      {% if p %}
+        <li class="page-item {% if p == pagination.page %}active{% endif %}">
+          <a class="page-link" href="{{ url_for('admin.admin_dashboard', page=p) }}">{{ p }}</a>
+        </li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">…</span></li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}

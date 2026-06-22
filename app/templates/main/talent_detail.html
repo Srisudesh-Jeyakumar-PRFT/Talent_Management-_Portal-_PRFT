@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}{{ profile.full_name }} – TalentPortal{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+
+    <!-- Profile Header Card -->
+    <div class="card border-0 shadow mb-4">
+      <div class="card-body p-4">
+        <div class="d-flex flex-column flex-md-row gap-4 align-items-start">
+          <!-- Photo -->
+          <div class="flex-shrink-0 text-center">
+            {% if profile.photo_filename %}
+              <img src="{{ url_for('static', filename='uploads/' + profile.photo_filename) }}"
+                   alt="{{ profile.full_name }}"
+                   class="rounded-circle shadow"
+                   style="width:120px;height:120px;object-fit:cover;">
+            {% else %}
+              <div class="default-avatar rounded-circle d-inline-flex align-items-center justify-content-center shadow"
+                   style="width:120px;height:120px;">
+                <i class="bi bi-person-fill fs-1 text-white"></i>
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Info -->
+          <div class="flex-grow-1">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+              <div>
+                <h2 class="fw-bold mb-0">{{ profile.full_name }}</h2>
+                {% if profile.title %}
+                  <p class="text-primary fs-5 mb-1">{{ profile.title }}</p>
+                {% endif %}
+              </div>
+              <div class="d-flex gap-2 flex-wrap">
+                {% if current_user.is_authenticated and (current_user.id == profile.user_id or current_user.is_admin) %}
+                  <a href="{{ url_for('profile.edit_profile') }}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-pencil me-1"></i>Edit
+                  </a>
+                {% endif %}
+                <a href="{{ url_for('profile.download_pdf', user_id=profile.user_id) }}"
+                   class="btn btn-sm btn-outline-secondary">
+                  <i class="bi bi-file-earmark-pdf me-1"></i>Download PDF
+                </a>
+              </div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-3 mt-2 text-muted small">
+              {% if profile.location %}
+                <span><i class="bi bi-geo-alt-fill text-primary me-1"></i>{{ profile.location }}</span>
+              {% endif %}
+              {% if profile.experience_years is not none %}
+                <span><i class="bi bi-briefcase-fill text-primary me-1"></i>{{ profile.experience_years }} yr(s) experience</span>
+              {% endif %}
+            </div>
+
+            <!-- Skills -->
+            {% if profile.skills_list %}
+            <div class="mt-3">
+              {% for skill in profile.skills_list %}
+                <span class="badge skill-badge me-1 mb-1 fs-6">{{ skill }}</span>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bio -->
+    {% if profile.bio %}
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h5 class="fw-bold"><i class="bi bi-person-lines-fill text-primary me-2"></i>About</h5>
+        <p class="mb-0" style="white-space: pre-line;">{{ profile.bio }}</p>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Links -->
+    {% if profile.portfolio_url or profile.github_url or profile.linkedin_url %}
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h5 class="fw-bold"><i class="bi bi-link-45deg text-primary me-2"></i>Links</h5>
+        <div class="d-flex flex-wrap gap-3">
+          {% if profile.portfolio_url %}
+            <a href="{{ profile.portfolio_url }}" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm">
+              <i class="bi bi-globe me-1"></i>Portfolio
+            </a>
+          {% endif %}
+          {% if profile.github_url %}
+            <a href="{{ profile.github_url }}" target="_blank" rel="noopener" class="btn btn-outline-dark btn-sm">
+              <i class="bi bi-github me-1"></i>GitHub
+            </a>
+          {% endif %}
+          {% if profile.linkedin_url %}
+            <a href="{{ profile.linkedin_url }}" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm">
+              <i class="bi bi-linkedin me-1"></i>LinkedIn
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Back to Browse
+    </a>
+
+  </div>
+</div>
+{% endblock %}

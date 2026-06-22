@@ -1,0 +1,501 @@
+{% extends "base.html" %}
+{% block title %}Edit Profile – TalentPortal{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="fw-bold"><i class="bi bi-pencil-square me-2 text-primary"></i>
+        {{ 'Edit' if profile else 'Create' }} Profile
+      </h2>
+      {% if profile %}
+        <a href="{{ url_for('profile.my_profile') }}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-eye me-1"></i>View Profile
+        </a>
+      {% endif %}
+    </div>
+
+    {% if errors %}
+    <div class="alert alert-danger">
+      <strong><i class="bi bi-exclamation-triangle-fill me-1"></i>Please fix the following errors:</strong>
+      <ul class="mb-0 mt-1 ps-3">
+        {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('profile.edit_profile') }}"
+          enctype="multipart/form-data" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <!-- ── Photo ──────────────────────────────────────────────────────── -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+          <h5 class="fw-bold mb-3"><i class="bi bi-camera-fill text-primary me-2"></i>Profile Photo</h5>
+          <div class="d-flex align-items-center gap-4">
+            <div class="flex-shrink-0">
+              {% if profile and profile.photo_filename %}
+                <img id="photo-preview"
+                     src="{{ url_for('static', filename='uploads/' + profile.photo_filename) }}"
+                     alt="Current photo" class="rounded-circle shadow"
+                     style="width:80px;height:80px;object-fit:cover;">
+              {% else %}
+                <div id="photo-preview-placeholder"
+                     class="default-avatar rounded-circle d-flex align-items-center justify-content-center shadow"
+                     style="width:80px;height:80px;">
+                  <i class="bi bi-person-fill fs-3 text-white"></i>
+                </div>
+                <img id="photo-preview" class="rounded-circle shadow d-none"
+                     style="width:80px;height:80px;object-fit:cover;" alt="Preview">
+              {% endif %}
+            </div>
+            <div>
+              <input type="file" id="photo" name="photo" class="form-control" accept="image/*"
+                     onchange="previewPhoto(this)">
+              <small class="text-muted">PNG, JPG, GIF, WebP. Max 5MB.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Basic Info ─────────────────────────────────────────────────── -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+          <h5 class="fw-bold mb-3"><i class="bi bi-info-circle-fill text-primary me-2"></i>Basic Information</h5>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
+              <input type="text" name="full_name" class="form-control"
+                     value="{{ form_data.get('full_name', '') }}"
+                     placeholder="e.g. Jane Smith" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Professional Title</label>
+              <input type="text" name="title" class="form-control"
+                     value="{{ form_data.get('title', '') }}"
+                     placeholder="e.g. Senior Python Developer">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Location</label>
+              <input type="text" name="location" class="form-control"
+                     value="{{ form_data.get('location', '') }}"
+                     placeholder="e.g. San Francisco, CA">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Years of Experience</label>
+              <input type="number" name="experience_years" class="form-control" min="0" max="60"
+                     value="{{ form_data.get('experience_years', '') }}"
+                     placeholder="e.g. 5">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Bio & Skills ───────────────────────────────────────────────── -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+          <h5 class="fw-bold mb-3"><i class="bi bi-file-person-fill text-primary me-2"></i>Bio & Skills</h5>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Bio</label>
+            <textarea name="bio" class="form-control" rows="5"
+                      placeholder="Brief professional summary (max 2000 chars)…">{{ form_data.get('bio', '') }}</textarea>
+            <div class="d-flex justify-content-end">
+              <small class="text-muted bio-counter">0 / 2000</small>
+            </div>
+          </div>
+          <div class="mb-2">
+            <label class="form-label fw-semibold">Skills</label>
+            <input type="text" name="skills" id="skills-input" class="form-control"
+                   value="{{ form_data.get('skills', '') }}"
+                   placeholder="e.g. Python, Flask, React, PostgreSQL">
+            <small class="text-muted">Separate with commas.</small>
+          </div>
+          <div id="skills-preview" class="mt-2"></div>
+        </div>
+      </div>
+
+      <!-- ── Work Experience ────────────────────────────────────────────── -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0"><i class="bi bi-briefcase-fill text-primary me-2"></i>Work Experience</h5>
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addExperience()">
+              <i class="bi bi-plus-circle me-1"></i>Add
+            </button>
+          </div>
+          <div id="experience-list">
+            {# Existing rows are pre-rendered server-side; JS handles new rows added client-side #}
+            {% set exps = form_data.get('_experiences', []) %}
+            {% for exp in exps %}
+            {% set idx = loop.index0 %}
+            <div class="experience-block border rounded p-3 mb-3 position-relative">
+              <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2"
+                      onclick="removeBlock(this)"><i class="bi bi-trash"></i></button>
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Company / Organisation <span class="text-danger">*</span></label>
+                  <input type="text" name="exp_company_{{ idx }}" class="form-control form-control-sm"
+                         value="{{ exp.company | default('') }}" placeholder="e.g. Perficient, Inc." required>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Job Title / Role <span class="text-danger">*</span></label>
+                  <input type="text" name="exp_title_{{ idx }}" class="form-control form-control-sm"
+                         value="{{ exp.job_title | default('') }}" placeholder="e.g. Senior Solutions Architect" required>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold small">Start Date</label>
+                  <input type="text" name="exp_start_{{ idx }}" class="form-control form-control-sm"
+                         value="{{ exp.start_date | default('') }}" placeholder="e.g. Jan 2020">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold small">End Date</label>
+                  <input type="text" name="exp_end_{{ idx }}" class="form-control form-control-sm"
+                         value="{{ exp.end_date | default('') }}"
+                         placeholder="e.g. Dec 2023"
+                         {{ 'disabled' if exp.is_current else '' }}>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                  <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox"
+                           name="exp_current_{{ idx }}" id="exp_current_{{ idx }}"
+                           onchange="toggleEndDate(this)"
+                           {{ 'checked' if exp.is_current else '' }}>
+                    <label class="form-check-label small fw-semibold" for="exp_current_{{ idx }}">Currently here</label>
+                  </div>
+                </div>
+                <div class="col-12">
+                  <label class="form-label fw-semibold small">Description / Responsibilities</label>
+                  <textarea name="exp_desc_{{ idx }}" class="form-control form-control-sm" rows="3"
+                            placeholder="Describe your role and key achievements…">{{ exp.description | default('') }}</textarea>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          <p id="exp-empty-msg" class="text-muted small {{ 'd-none' if form_data.get('_experiences') else '' }}">
+            No work experience added yet. Click <strong>Add</strong> to get started.
+          </p>
+        </div>
+      </div>
+
+      <!-- ── Education ──────────────────────────────────────────────────── -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0"><i class="bi bi-mortarboard-fill text-primary me-2"></i>Education</h5>
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addEducation()">
+              <i class="bi bi-plus-circle me-1"></i>Add
+            </button>
+          </div>
+          <div id="education-list">
+            {% set edus = form_data.get('_educations', []) %}
+            {% for edu in edus %}
+            {% set idx = loop.index0 %}
+            <div class="education-block border rounded p-3 mb-3 position-relative">
+              <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2"
+                      onclick="removeBlock(this)"><i class="bi bi-trash"></i></button>
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Institution <span class="text-danger">*</span></label>
+                  <input type="text" name="edu_institution_{{ idx }}" class="form-control form-control-sm"
+                         value="{{ edu.institution | default('') }}" placeholder="e.g. University of Texas" required>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Degree <span class="text-danger">*</span></label>
+                  <input type="text" name="edu_degree_{{ idx }}" class="form-control form-control-sm"
+                         value="{{ edu.degree | default('') }}" placeholder="e.g. Bachelor of Science" required>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Field of Study</label>
+                  <input type="text" name="edu_field_{{ idx }}" class="form-control form-control-sm"
+                         value="{{ edu.field | default('') }}" placeholder="e.g. Computer Science">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold small">Start Year</label>
+                  <input type="text" name="edu_start_year_{{ idx }}" class="form-control form-control-sm"
+                         value="{{ edu.start_year | default('') }}" placeholder="e.g. 2010">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold small">End Year</label>
+                  <input type="text" name="edu_end_year_{{ idx }}" class="form-control form-control-sm"
+                         value="{{ edu.end_year | default('') }}" placeholder="e.g. 2014">
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          <p id="edu-empty-msg" class="text-muted small {{ 'd-none' if form_data.get('_educations') else '' }}">
+            No education added yet. Click <strong>Add</strong> to get started.
+          </p>
+        </div>
+      </div>
+
+      <!-- ── Links ──────────────────────────────────────────────────────── -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+          <h5 class="fw-bold mb-3"><i class="bi bi-link-45deg text-primary me-2"></i>Portfolio Links</h5>
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-semibold"><i class="bi bi-globe text-primary me-1"></i>Portfolio URL</label>
+              <input type="url" name="portfolio_url" class="form-control"
+                     value="{{ form_data.get('portfolio_url', '') }}"
+                     placeholder="https://yourportfolio.com">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold"><i class="bi bi-github me-1"></i>GitHub URL</label>
+              <input type="url" name="github_url" class="form-control"
+                     value="{{ form_data.get('github_url', '') }}"
+                     placeholder="https://github.com/username">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold"><i class="bi bi-linkedin me-1"></i>LinkedIn URL</label>
+              <input type="url" name="linkedin_url" class="form-control"
+                     value="{{ form_data.get('linkedin_url', '') }}"
+                     placeholder="https://linkedin.com/in/username">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Visibility ─────────────────────────────────────────────────── -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body d-flex justify-content-between align-items-center">
+          <div>
+            <h5 class="fw-bold mb-0"><i class="bi bi-globe text-primary me-2"></i>Public Profile</h5>
+            <small class="text-muted">When enabled, your profile appears in search results.</small>
+          </div>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" name="is_public" id="is_public"
+                   {% if form_data.get('is_public', True) %}checked{% endif %} role="switch"
+                   style="width:3em;height:1.5em;">
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-3">
+        <button type="submit" class="btn btn-primary fw-bold px-4">
+          <i class="bi bi-save me-1"></i>Save Profile
+        </button>
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── Hidden template blocks (cloned by JS) ──────────────────────────────── -->
+<template id="exp-template">
+  <div class="experience-block border rounded p-3 mb-3 position-relative">
+    <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2"
+            onclick="removeBlock(this)"><i class="bi bi-trash"></i></button>
+    <div class="row g-2">
+      <div class="col-md-6">
+        <label class="form-label fw-semibold small">Company / Organisation <span class="text-danger">*</span></label>
+        <input type="text" name="exp_company___IDX__" class="form-control form-control-sm"
+               placeholder="e.g. Perficient, Inc." required>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold small">Job Title / Role <span class="text-danger">*</span></label>
+        <input type="text" name="exp_title___IDX__" class="form-control form-control-sm"
+               placeholder="e.g. Senior Solutions Architect">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small">Start Date</label>
+        <input type="text" name="exp_start___IDX__" class="form-control form-control-sm"
+               placeholder="e.g. Jan 2020">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small">End Date</label>
+        <input type="text" name="exp_end___IDX__" class="form-control form-control-sm"
+               placeholder="e.g. Dec 2023">
+      </div>
+      <div class="col-md-4 d-flex align-items-end">
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" name="exp_current___IDX__"
+                 id="exp_current___IDX__" onchange="toggleEndDate(this)">
+          <label class="form-check-label small fw-semibold" for="exp_current___IDX__">Currently here</label>
+        </div>
+      </div>
+      <div class="col-12">
+        <label class="form-label fw-semibold small">Description / Responsibilities</label>
+        <textarea name="exp_desc___IDX__" class="form-control form-control-sm" rows="3"
+                  placeholder="Describe your role, responsibilities, and key achievements…"></textarea>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="edu-template">
+  <div class="education-block border rounded p-3 mb-3 position-relative">
+    <button type="button" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2"
+            onclick="removeBlock(this)"><i class="bi bi-trash"></i></button>
+    <div class="row g-2">
+      <div class="col-md-6">
+        <label class="form-label fw-semibold small">Institution <span class="text-danger">*</span></label>
+        <input type="text" name="edu_institution___IDX__" class="form-control form-control-sm"
+               placeholder="e.g. University of Texas" required>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold small">Degree <span class="text-danger">*</span></label>
+        <input type="text" name="edu_degree___IDX__" class="form-control form-control-sm"
+               placeholder="e.g. Bachelor of Science" required>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold small">Field of Study</label>
+        <input type="text" name="edu_field___IDX__" class="form-control form-control-sm"
+               placeholder="e.g. Computer Science">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold small">Start Year</label>
+        <input type="text" name="edu_start_year___IDX__" class="form-control form-control-sm"
+               placeholder="e.g. 2010">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold small">End Year</label>
+        <input type="text" name="edu_end_year___IDX__" class="form-control form-control-sm"
+               placeholder="e.g. 2014">
+      </div>
+    </div>
+  </div>
+</template>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Start counters at the number of server-rendered rows so new JS rows
+// get unique indices and never collide with existing field names.
+let expCount = {{ (form_data.get('_experiences') or []) | length }};
+let eduCount = {{ (form_data.get('_educations')  or []) | length }};
+
+
+// ── Photo Preview ────────────────────────────────────────────────────────────
+function previewPhoto(input) {
+  const preview = document.getElementById('photo-preview');
+  const placeholder = document.getElementById('photo-preview-placeholder');
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      preview.src = e.target.result;
+      preview.classList.remove('d-none');
+      if (placeholder) placeholder.classList.add('d-none');
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+// ── Bio Counter ──────────────────────────────────────────────────────────────
+(function () {
+  const bio = document.querySelector('textarea[name="bio"]');
+  const counter = document.querySelector('.bio-counter');
+  if (!bio || !counter) return;
+  function update() {
+    const len = bio.value.length;
+    counter.textContent = len + ' / 2000';
+    counter.classList.toggle('text-danger', len > 2000);
+    counter.classList.toggle('text-muted', len <= 2000);
+  }
+  bio.addEventListener('input', update);
+  update();
+})();
+
+// ── Skills Preview ───────────────────────────────────────────────────────────
+(function () {
+  const input = document.getElementById('skills-input');
+  const preview = document.getElementById('skills-preview');
+  if (!input || !preview) return;
+  function render() {
+    const skills = input.value.split(',').map(s => s.trim()).filter(Boolean);
+    preview.innerHTML = skills.map(s =>
+      `<span class="badge skill-badge me-1 mb-1">${escapeHtml(s)}</span>`
+    ).join('');
+  }
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+              .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  input.addEventListener('input', render);
+  render();
+})();
+
+// ── Dynamic Experience Rows ──────────────────────────────────────────────────
+function addExperience(data) {
+  const tmpl = document.getElementById('exp-template').content.cloneNode(true);
+  const idx  = expCount++;
+  // Replace placeholder index in all name/id/for attributes
+  tmpl.querySelectorAll('[name],[id],[for]').forEach(el => {
+    ['name','id','for'].forEach(attr => {
+      if (el.hasAttribute(attr))
+        el.setAttribute(attr, el.getAttribute(attr).replace('__IDX__', idx));
+    });
+  });
+  // Pre-fill if editing existing data
+  if (data) {
+    setValue(tmpl, `exp_company_${idx}`,  data.company    || '');
+    setValue(tmpl, `exp_title_${idx}`,    data.job_title  || '');
+    setValue(tmpl, `exp_start_${idx}`,    data.start_date || '');
+    setValue(tmpl, `exp_end_${idx}`,      data.end_date   || '');
+    setValue(tmpl, `exp_desc_${idx}`,     data.description|| '');
+    if (data.is_current) {
+      const cb = tmpl.querySelector(`[name="exp_current_${idx}"]`);
+      if (cb) { cb.checked = true; }
+      const endInput = tmpl.querySelector(`[name="exp_end_${idx}"]`);
+      if (endInput) endInput.disabled = true;
+    }
+  }
+  document.getElementById('experience-list').appendChild(tmpl);
+  document.getElementById('exp-empty-msg').classList.add('d-none');
+}
+
+function addEducation(data) {
+  const tmpl = document.getElementById('edu-template').content.cloneNode(true);
+  const idx  = eduCount++;
+  tmpl.querySelectorAll('[name],[id],[for]').forEach(el => {
+    ['name','id','for'].forEach(attr => {
+      if (el.hasAttribute(attr))
+        el.setAttribute(attr, el.getAttribute(attr).replace('__IDX__', idx));
+    });
+  });
+  if (data) {
+    setValue(tmpl, `edu_institution_${idx}`, data.institution || '');
+    setValue(tmpl, `edu_degree_${idx}`,      data.degree      || '');
+    setValue(tmpl, `edu_field_${idx}`,       data.field       || '');
+    setValue(tmpl, `edu_start_year_${idx}`,  data.start_year  || '');
+    setValue(tmpl, `edu_end_year_${idx}`,    data.end_year    || '');
+  }
+  document.getElementById('education-list').appendChild(tmpl);
+  document.getElementById('edu-empty-msg').classList.add('d-none');
+}
+
+function setValue(root, name, value) {
+  const el = root.querySelector ? root.querySelector(`[name="${name}"]`)
+                                 : document.querySelector(`[name="${name}"]`);
+  if (!el) return;
+  if (el.tagName === 'TEXTAREA') el.textContent = value;
+  else el.value = value;
+}
+
+function removeBlock(btn) {
+  const block = btn.closest('.experience-block, .education-block');
+  const list  = block.parentElement;
+  block.remove();
+  // Show empty message if no rows remain
+  if (list.id === 'experience-list' && !list.querySelector('.experience-block'))
+    document.getElementById('exp-empty-msg').classList.remove('d-none');
+  if (list.id === 'education-list' && !list.querySelector('.education-block'))
+    document.getElementById('edu-empty-msg').classList.remove('d-none');
+}
+
+function toggleEndDate(checkbox) {
+  // Disable/clear end-date field when "Currently here" is checked
+  const row      = checkbox.closest('.row');
+  const endInput = row.querySelector('[name^="exp_end_"]');
+  if (!endInput) return;
+  endInput.disabled = checkbox.checked;
+  if (checkbox.checked) endInput.value = '';
+}
+
+// Existing rows are rendered server-side in the Jinja2 template above.
+// No JS pre-fill needed — running it would duplicate every row.
+// expCount / eduCount are already initialised to the correct starting
+// index so any newly JS-added rows get unique field names.
+</script>
+{% endblock %}

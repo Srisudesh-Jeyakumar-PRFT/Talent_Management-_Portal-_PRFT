@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Register – TalentPortal{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6 col-lg-5">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-4">
+        <div class="text-center mb-4">
+          <i class="bi bi-person-plus-fill display-4 text-primary"></i>
+          <h3 class="fw-bold mt-2">Create Account</h3>
+          <p class="text-muted small">Join TalentPortal and showcase your skills.</p>
+        </div>
+
+        <!-- Validation Errors -->
+        {% if errors %}
+        <div class="alert alert-danger">
+          <ul class="mb-0 ps-3">
+            {% for error in errors %}
+              <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('auth.register') }}" novalidate>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <div class="mb-3">
+            <label for="username" class="form-label fw-semibold">Username</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-person"></i></span>
+              <input type="text" id="username" name="username" class="form-control"
+                     value="{{ form_data.get('username', '') }}"
+                     placeholder="e.g. john_doe" required>
+            </div>
+            <small class="text-muted">Letters, numbers, dots, dashes, underscores. Min 3 chars.</small>
+          </div>
+
+          <div class="mb-3">
+            <label for="email" class="form-label fw-semibold">Email</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+              <input type="email" id="email" name="email" class="form-control"
+                     value="{{ form_data.get('email', '') }}"
+                     placeholder="you@example.com" required>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="password" class="form-label fw-semibold">Password</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-lock"></i></span>
+              <input type="password" id="password" name="password" class="form-control"
+                     placeholder="Min 8 chars, 1 uppercase, 1 digit" required>
+              <button class="btn btn-outline-secondary" type="button" onclick="togglePwd('password')">
+                <i class="bi bi-eye" id="password-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label for="confirm_password" class="form-label fw-semibold">Confirm Password</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+              <input type="password" id="confirm_password" name="confirm_password" class="form-control"
+                     placeholder="Repeat password" required>
+              <button class="btn btn-outline-secondary" type="button" onclick="togglePwd('confirm_password')">
+                <i class="bi bi-eye" id="confirm_password-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100 fw-bold">
+            <i class="bi bi-check-circle me-1"></i>Register
+          </button>
+        </form>
+
+        <hr class="my-3">
+        <p class="text-center mb-0 small">
+          Already have an account?
+          <a href="{{ url_for('auth.login') }}" class="fw-semibold text-primary">Log in</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePwd(id) {
+  const inp = document.getElementById(id);
+  const eye = document.getElementById(id + '-eye');
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    eye.classList.replace('bi-eye', 'bi-eye-slash');
+  } else {
+    inp.type = 'password';
+    eye.classList.replace('bi-eye-slash', 'bi-eye');
+  }
+}
+</script>
+{% endblock %}

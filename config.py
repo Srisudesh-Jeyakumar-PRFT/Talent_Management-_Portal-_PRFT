@@ -60,8 +60,27 @@ class ProductionConfig(Config):
     MAIL_USE_CONSOLE = False   # Always send real emails in production
 
 
+class TestingConfig(Config):
+    """
+    In-process SQLite database; CSRF, rate-limiting and real mail all disabled.
+    The fixture overrides SQLALCHEMY_DATABASE_URI and UPLOAD_FOLDER at runtime
+    so each test gets its own temp directory.
+    """
+    TESTING = True
+    DEBUG = True
+    WTF_CSRF_ENABLED = False
+    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    RATELIMIT_ENABLED = False
+    RATELIMIT_STORAGE_URI = "memory://"
+    MAIL_USE_CONSOLE = True
+    PASSWORD_RESET_EXPIRY = 3600
+    SERVER_NAME = "localhost"
+    UPLOAD_FOLDER = os.path.join(BASE_DIR, "app", "static", "uploads")
+
+
 config = {
     "development": DevelopmentConfig,
     "production": ProductionConfig,
+    "testing": TestingConfig,
     "default": DevelopmentConfig,
 }
